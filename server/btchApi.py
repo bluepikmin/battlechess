@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from server.utils import elo
 from typing import Optional, Tuple, Set, List
 
 from sqlalchemy.orm import Session
@@ -127,6 +128,20 @@ def read_own_games(current_user: schemas.User = Depends(get_current_active_user)
     print(f'{games}')
     return games
 
+@app.get("/users/me/elo")
+def get_elo_delta(player: int=0, score: Optional[int] = None):
+    if player == 0:
+        return {}
+    
+    me = read_users_me()
+    player = read_single_user(userID=player)
+    if score:
+        return elo(me.elo_rating, player.elo_rating, score)
+    else:
+        return [elo(me.elo_rating, player.elo_rating, 1),
+        elo(me.elo_rating, player.elo_rating, .5),
+        elo(me.elo_rating, player.elo_rating, 0)]
+
 
 @app.get("/users/", response_model=List[schemas.User])
 def read_users(skip: int = 0,
@@ -144,7 +159,7 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 
 @app.get("/users/u/{userID}", response_model=schemas.User)
-def read__single_user(userID: int,
+def read_single_user(userID: int,
                       current_user: schemas.User = Depends(get_current_active_user),
                       db: Session = Depends(get_db)):
     user = crud.get_user_by_id(db, userID)

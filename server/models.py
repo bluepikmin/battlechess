@@ -1,5 +1,7 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import func
 from fastapi import HTTPException, status
 
 from .btchApiDB import Base
@@ -22,6 +24,7 @@ class User(Base):
     hashed_password = Column(String)
     status = Column(String, default="active")
     created_at = Column(DateTime)
+    elo_rating = Column(int, default=300)
 
     # games = relationship("Game", back_populates="owner", foreign_keys='Game.owner_id')
     # whites = relationship("Game", back_populates="white")
@@ -29,6 +32,11 @@ class User(Base):
 
     def is_active(self):
         return self.status == "active"
+    
+    def get_rank(self):
+        query = Session.query(User)
+        query = query.filter(User.elo_rating > self.elo_rating)
+        return query.with_entities(func.count()).scalar()
 
 class Game(Base):
 

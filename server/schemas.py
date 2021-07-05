@@ -165,6 +165,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     avatar: Optional[str] = None
+    rank: Optional[int] = None
 
 
 class UserCreate(UserBase):
@@ -174,6 +175,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     status: str
+    elo_rating: int
 
     # games: List[Game] = []
     # whites: List[Game] = []
