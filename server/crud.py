@@ -38,8 +38,7 @@ def get_user(db: Session, user_id: int):
 
 
 def get_user_by_id(db: Session, userid: int):
-    return db.query(
-        models.User).filter(models.User.id == userid).first()
+    return db.query(models.User).filter(models.User.id == userid).first()
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -192,6 +191,10 @@ def create_snap_by_move(db: Session, user: schemas.User, game: schemas.Game,
     if winner:
         game.winner = winner
         game.status = 'finished'
+        # Update elo ratings
+        if winner == "white":
+            #update elos
+            pass
         print(
             f'Game {game.uuid} {game.white_id} vs {game.black_id} won by {game.winner}'
         )

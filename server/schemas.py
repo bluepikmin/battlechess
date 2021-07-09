@@ -1,3 +1,5 @@
+from server import btchApi
+from server import crud
 from typing import List, Optional, Tuple
 from datetime import datetime, time, timedelta
 # from uuid import UUID # represented as string
@@ -165,7 +167,6 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     avatar: Optional[str] = None
-    rank: Optional[int] = None
 
 
 class UserCreate(UserBase):
@@ -176,6 +177,7 @@ class User(UserBase):
     id: int
     status: str
     elo_rating: int
+    rank: int
 
     # games: List[Game] = []
     # whites: List[Game] = []

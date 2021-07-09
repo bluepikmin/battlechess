@@ -1,8 +1,9 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, func, select
+from sqlalchemy.orm import column_property, relationship
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import func
+from sqlalchemy.ext.hybrid import hybrid_property
 from fastapi import HTTPException, status
+from sqlalchemy.orm.session import object_session
 
 from .btchApiDB import Base
 from .schemas import GameStatus
@@ -24,7 +25,17 @@ class User(Base):
     hashed_password = Column(String)
     status = Column(String, default="active")
     created_at = Column(DateTime)
-    elo_rating = Column(int, default=300)
+    elo_rating = Column(Integer, default=100)
+
+    @hybrid_property
+    def rank(self):
+        return object_session(self).query(User).filter(User.elo_rating > self.elo_rating).count() + 1
+
+    @rank.expression
+    def rank(cls):
+        return select([func.count(User.id)+1]).where(User.elo_rating > cls.elo_rating).label('rank')
+    
+
 
     # games = relationship("Game", back_populates="owner", foreign_keys='Game.owner_id')
     # whites = relationship("Game", back_populates="white")
@@ -33,11 +44,6 @@ class User(Base):
     def is_active(self):
         return self.status == "active"
     
-    def get_rank(self):
-        query = Session.query(User)
-        query = query.filter(User.elo_rating > self.elo_rating)
-        return query.with_entities(func.count()).scalar()
-
 class Game(Base):
 
     __tablename__ = "game"
