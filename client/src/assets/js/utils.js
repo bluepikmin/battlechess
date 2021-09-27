@@ -1,6 +1,6 @@
 import {Game, User, source} from './store.js'
 
-const API_URL = 'http://sxbn.org:8080' ;
+const API_URL = 'http://127.0.0.1:8000' ;
 const DEFAULT_AVATAR = './img/avatars/avatar_09.jpeg';
 
 

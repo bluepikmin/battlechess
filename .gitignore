@@ -12,3 +12,4 @@ bin
 .vscode
 sql_app.db
 test.db
+__pycache__

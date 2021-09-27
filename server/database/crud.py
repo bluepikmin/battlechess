@@ -1,22 +1,26 @@
 import random
+import string
+from typing import Optional
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
-from typing import Optional, Tuple, Set
 from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
+from jose import jwt
+from passlib.context import CryptContext
 
-from . import models, schemas
+from server.database import models
+from server.schemas import schemas
 
-from .utils import (get_password_hash, verify_password, get_random_string,
-                    defaultBoard)
 
-from .config import (
-    SECRET_KEY,
-    ALGORITHM,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    HANDLEBASEURL,
-)
+from server.utils.config import SECRET_KEY, ALGORITHM
 
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def verify_password(plain_password, hashed_password):
+    # TODO catch UnknownHashError for plain-text stored passwords
+    return pwd_context.verify(plain_password, hashed_password)
 
 # TODO redo this. I hate myself for writing it.
 def create_game_uuid(db: Session):
@@ -32,6 +36,27 @@ def create_game_uuid(db: Session):
         return None
     return uuid
 
+
+def get_random_string(length=6):
+    # choose from all lowercase letter
+    letters = string.ascii_lowercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str
+
+#def handle2uuid(uuid):
+#    return HANDLEBASEURL + uuid
+
+def defaultBoard():
+    return (
+        'RNBQKBNR'
+        'PPPPPPPP'
+        '________'
+        '________'
+        '________'
+        '________'
+        'pppppppp'
+        'rnbqkbnr'
+    )
 
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()

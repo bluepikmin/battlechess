@@ -1,16 +1,14 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, func, select
-from sqlalchemy.orm import column_property, relationship
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import  relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from fastapi import HTTPException, status
 from sqlalchemy.orm.session import object_session
 
-from .btchApiDB import Base
-from .schemas import GameStatus
 from core.Board import Board
 from core.btchBoard import BtchBoard
 
-from .utils import ad2extij, extij2ad, ad2ij
+from server.database.btchApiDB import Base
+from server.schemas import schemas
 
 
 class User(Base):
@@ -34,12 +32,7 @@ class User(Base):
     @rank.expression
     def rank(cls):
         return select([func.count(User.id)+1]).where(User.elo_rating > cls.elo_rating).label('rank')
-    
 
-
-    # games = relationship("Game", back_populates="owner", foreign_keys='Game.owner_id')
-    # whites = relationship("Game", back_populates="white")
-    # blacks = relationship("Game", back_populates="black")
 
     def is_active(self):
         return self.status == "active"
@@ -54,7 +47,7 @@ class Game(Base):
     owner_id = Column(Integer, ForeignKey("user.id"))
     white_id = Column(Integer, ForeignKey("user.id"))
     black_id = Column(Integer, ForeignKey("user.id"))
-    status = Column(String, default=GameStatus.WAITING)
+    status = Column(String, default=schemas.GameStatus.WAITING)
     turn = Column(String, default="white")
     last_move_time = Column(DateTime)
     public = Column(Boolean, default=True)
@@ -110,10 +103,10 @@ class Game(Base):
         return None
 
     def is_finished(self):
-        return self.status == GameStatus.OVER
+        return self.status == schemas.GameStatus.OVER
 
     def is_running(self):
-        return self.status == GameStatus.STARTED
+        return self.status == schemas.GameStatus.STARTED
 
     def get_latest_snap(self):
         if not self.snaps:
@@ -121,7 +114,7 @@ class Game(Base):
         return self.snaps[-1]
 
     def start_game(self):
-        self.status = GameStatus.STARTED
+        self.status = schemas.GameStatus.STARTED
 
     def refresh_turn(self):
         if not self.snaps:
@@ -151,6 +144,20 @@ class GameSnap(Base):
     move_number = Column(Integer)
 
     game = relationship("Game", back_populates="snaps")
+
+    def extij2ad(i, j):
+        square = chr(j - 2 + 97) + str(8 - (i - 2))
+        return square
+
+    def ad2extij(square):
+        i = 8 - int(square[1]) + 2
+        j = ord(square[0]) - ord('a') + 2
+        return (i, j)
+
+    def ad2ij(square):
+        i = 8 - int(square[1])
+        j = ord(square[0]) - ord('a')
+        return (i, j)
 
     def getNextTurn(self):
         if not self.game.is_running():
@@ -234,8 +241,8 @@ class GameSnap(Base):
         if not self.move:
             return None
 
-        i, j = ad2ij(self.move[0:2])
-        ii, jj = ad2ij(self.move[2:4])
+        i, j = self.ad2ij(self.move[0:2])
+        ii, jj = self.ad2ij(self.move[2:4])
         piece = self.board[ii * 8 + jj]
 
         if piece in ['p', 'P']:
@@ -254,6 +261,6 @@ class GameSnap(Base):
         board.filter(color)
 
         # btchboard coordinates are extended [0,12]
-        i, j = ad2extij(square)
+        i, j = self.ad2extij(square)
         ijmoves = board.possibleMoves(color, i, j)
-        return [extij2ad(i, j) for i, j in ijmoves]
+        return [self.extij2ad(i, j) for i, j in ijmoves]
